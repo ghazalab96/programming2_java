@@ -1,4 +1,5 @@
 package at.ac.fhcampuswien.controllers;
+import java.nio.charset.StandardCharsets;
 
 import at.ac.fhcampuswien.ApiUtils;
 import at.ac.fhcampuswien.models.Movie;
@@ -63,4 +64,115 @@ public class MovieController implements HttpHandler {
     }
 
     // methods from Person 2 and Person 3 are added here later
+
+
+
+
+    private void handleAddRequest(String method, HttpExchange exchange) throws IOException {
+        switch (method) {
+            case "POST" -> {
+                String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                Movie movie = parseMovieWithoutId(requestBody);
+
+                if (movie == null || !isValidMovie(movie)) {
+                    String response = "{ \"error\": \"Invalid movie data\" }";
+                    ApiUtils.sendResponse(exchange, 400, response);
+                    return;
+                }
+
+                if (movieExists(movie)) {
+                    String response = "{ \"error\": \"Movie already exists\" }";
+                    ApiUtils.sendResponse(exchange, 400, response);
+                    return;
+                }
+
+                movies.add(movie);
+                String response = "{ \"message\": \"Movie added successfully\" }";
+                ApiUtils.sendResponse(exchange, 201, response);
+            }
+            default -> {
+                String response = "{ \"error\": \"Method not allowed\" }";
+                ApiUtils.sendResponse(exchange, 405, response);
+            }
+        }
+    }
+
+    private boolean isValidMovie(Movie movie) {
+        return movie.getTitle() != null && !movie.getTitle().trim().isEmpty()
+                && movie.getGenre() != null && !movie.getGenre().trim().isEmpty()
+                && movie.getReleaseYear() > 1800;
+    }
+
+    private boolean movieExists(Movie movie) {
+        for (Movie existingMovie : movies) {
+            if (sameMovieData(existingMovie, movie)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean sameMovieData(Movie movie1, Movie movie2) {
+        return movie1.getTitle().equalsIgnoreCase(movie2.getTitle())
+                && movie1.getGenre().equalsIgnoreCase(movie2.getGenre())
+                && movie1.getReleaseYear() == movie2.getReleaseYear();
+    }
+
+    private Movie parseMovieWithoutId(String json) {
+        try {
+            String title = extractJsonValue(json, "title");
+            String genre = extractJsonValue(json, "genre");
+            String releaseYearString = extractJsonValue(json, "releaseYear");
+
+            if (title == null || genre == null || releaseYearString == null) {
+                return null;
+            }
+
+            int releaseYear = Integer.parseInt(releaseYearString);
+            return new Movie(title, genre, releaseYear);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String extractJsonValue(String json, String key) {
+        String searchKey = "\"" + key + "\"";
+        int keyIndex = json.indexOf(searchKey);
+        if (keyIndex == -1) {
+            return null;
+        }
+
+        int colonIndex = json.indexOf(":", keyIndex);
+        if (colonIndex == -1) {
+            return null;
+        }
+
+        int valueStart = colonIndex + 1;
+        while (valueStart < json.length() && Character.isWhitespace(json.charAt(valueStart))) {
+            valueStart++;
+        }
+
+        if (valueStart >= json.length()) {
+            return null;
+        }
+
+        if (json.charAt(valueStart) == '"') {
+            int valueEnd = json.indexOf("\"", valueStart + 1);
+            if (valueEnd == -1) {
+                return null;
+            }
+            return json.substring(valueStart + 1, valueEnd);
+        } else {
+            int valueEnd = valueStart;
+            while (valueEnd < json.length()
+                    && json.charAt(valueEnd) != ','
+                    && json.charAt(valueEnd) != '}'
+                    && !Character.isWhitespace(json.charAt(valueEnd))) {
+                valueEnd++;
+            }
+            return json.substring(valueStart, valueEnd);
+        }
+    }
+
+    // Ooez part
 }
