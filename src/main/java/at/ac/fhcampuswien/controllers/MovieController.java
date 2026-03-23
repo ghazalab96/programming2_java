@@ -7,7 +7,11 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
+import java.nio.charset.StandardCharsets;
+
 
 public class MovieController implements HttpHandler {
     private final String BASE = "/api/movies/";
@@ -175,4 +179,92 @@ public class MovieController implements HttpHandler {
     }
 
     // Ooez part
+    private void handleDeleteRequest(String method, HttpExchange exchange) throws IOException {
+        switch (method) {
+            case "DELETE" -> {
+                String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                Movie movieToDelete = parseMovieWithoutId(requestBody);
+
+                if (movieToDelete == null || !isValidMovie(movieToDelete)) {
+                    String response = "{ \"error\": \"Invalid movie data\" }";
+                    ApiUtils.sendResponse(exchange, 400, response);
+                    return;
+                }
+
+                Iterator<Movie> iterator = movies.iterator();
+                while (iterator.hasNext()) {
+                    Movie currentMovie = iterator.next();
+                    if (sameMovieData(currentMovie, movieToDelete)) {
+                        iterator.remove();
+                        String response = "{ \"message\": \"Movie deleted successfully\" }";
+                        ApiUtils.sendResponse(exchange, 200, response);
+                        return;
+                    }
+                }
+
+                String response = "{ \"error\": \"Movie not found\" }";
+                ApiUtils.sendResponse(exchange, 404, response);
+            }
+            default -> {
+                String response = "{ \"error\": \"Method not allowed\" }";
+                ApiUtils.sendResponse(exchange, 405, response);
+            }
+        }
+    }
+
+    private void handleUpdateRequest(String method, HttpExchange exchange) throws IOException {
+        switch (method) {
+            case "PUT" -> {
+                String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                Movie updatedMovie = parseMovieWithId(requestBody);
+
+                if (updatedMovie == null || updatedMovie.getId() == null || !isValidMovie(updatedMovie)) {
+                    String response = "{ \"error\": \"Invalid movie data\" }";
+                    ApiUtils.sendResponse(exchange, 400, response);
+                    return;
+                }
+
+                for (Movie currentMovie : movies) {
+                    if (currentMovie.getId().equals(updatedMovie.getId())) {
+                        currentMovie.setTitle(updatedMovie.getTitle());
+                        currentMovie.setGenre(updatedMovie.getGenre());
+                        currentMovie.setReleaseYear(updatedMovie.getReleaseYear());
+
+                        String response = "{ \"message\": \"Movie updated successfully\" }";
+                        ApiUtils.sendResponse(exchange, 200, response);
+                        return;
+                    }
+                }
+
+                String response = "{ \"error\": \"Movie not found\" }";
+                ApiUtils.sendResponse(exchange, 404, response);
+            }
+            default -> {
+                String response = "{ \"error\": \"Method not allowed\" }";
+                ApiUtils.sendResponse(exchange, 405, response);
+            }
+        }
+    }
+
+    private Movie parseMovieWithId(String json) {
+        try {
+            String idString = extractJsonValue(json, "id");
+            String title = extractJsonValue(json, "title");
+            String genre = extractJsonValue(json, "genre");
+            String releaseYearString = extractJsonValue(json, "releaseYear");
+
+            if (idString == null || title == null || genre == null || releaseYearString == null) {
+                return null;
+            }
+
+            UUID id = UUID.fromString(idString);
+            int releaseYear = Integer.parseInt(releaseYearString);
+
+            Movie movie = new Movie(title, genre, releaseYear);
+            movie.setId(id);
+            return movie;
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }
