@@ -177,8 +177,6 @@ public class MovieController implements HttpHandler {
             return json.substring(valueStart, valueEnd);
         }
     }
-
-    // Ooez part
     private void handleDeleteRequest(String method, HttpExchange exchange) throws IOException {
         switch (method) {
             case "DELETE" -> {
