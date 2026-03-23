@@ -1,6 +1,7 @@
 package at.ac.fhcampuswien;
 
 import at.ac.fhcampuswien.controllers.HelloController;
+import at.ac.fhcampuswien.controllers.MovieController;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -15,7 +16,8 @@ public class Main {
         HttpServer server = HttpServer.create(new InetSocketAddress(SERVER_PORT), 0);
 
         // Register controllers and their handlers - REST endpoints
-        registerController(server, "/api/hello", new HelloController());
+        registerController(server, "/api/hello/", new HelloController());
+        registerController(server, "/api/movies/", new MovieController());
 
         // Start the server
         server.setExecutor(null);
