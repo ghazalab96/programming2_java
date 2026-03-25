@@ -67,10 +67,6 @@ public class MovieController implements HttpHandler {
         return text.replace("\"", "\\\"");
     }
 
-    // methods from Person 2 and Person 3 are added here later
-
-
-
 
     private void handleAddRequest(String method, HttpExchange exchange) throws IOException {
         switch (method) {
