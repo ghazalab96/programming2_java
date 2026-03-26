@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
-import java.nio.charset.StandardCharsets;
+
 
 
 public class MovieController implements HttpHandler {
@@ -100,7 +100,7 @@ public class MovieController implements HttpHandler {
     private boolean isValidMovie(Movie movie) {
         return movie.getTitle() != null && !movie.getTitle().trim().isEmpty()
                 && movie.getGenre() != null && !movie.getGenre().trim().isEmpty()
-                && movie.getReleaseYear() > 1800;
+                && movie.getReleaseYear() > 1800 && movie.getReleaseYear() < 2027;
     }
 
     private boolean movieExists(Movie movie) {
