@@ -3,7 +3,6 @@ package at.ac.fhcampuswien.services;
 import at.ac.fhcampuswien.models.Movie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
