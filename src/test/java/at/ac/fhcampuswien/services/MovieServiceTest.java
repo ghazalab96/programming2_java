@@ -39,27 +39,27 @@ class MovieServiceTest {
         boolean result = movieService.addMovie(newMovie);
 
         assertTrue(result);
-        assertEquals(3, movies.size());
+        assertEquals(3, movieService.getAllMovies().size());
     }
 
     @Test
     void givenDuplicateMovie_whenAddMovie_thenReturnFalse() {
-        Movie duplicateMovie = new Movie("Inception", "Sci-Fi", 2010);
+        Movie duplicateMovie = inception;
 
         boolean result = movieService.addMovie(duplicateMovie);
 
         assertFalse(result);
-        assertEquals(2, movies.size());
+        assertEquals(2, movieService.getAllMovies().size());
     }
 
     @Test
     void givenExistingMovie_whenDeleteMovie_thenMovieIsRemoved() {
-        Movie movieToDelete = new Movie("Inception", "Sci-Fi", 2010);
+        Movie movieToDelete =inception;
 
         boolean result = movieService.deleteMovie(movieToDelete);
 
         assertTrue(result);
-        assertEquals(1, movies.size());
+        assertEquals(1, movieService.getAllMovies().size());
     }
 
     @Test
@@ -69,7 +69,7 @@ class MovieServiceTest {
         boolean result = movieService.deleteMovie(movieToDelete);
 
         assertFalse(result);
-        assertEquals(2, movies.size());
+        assertEquals(2, movieService.getAllMovies().size());
     }
 
     @Test
