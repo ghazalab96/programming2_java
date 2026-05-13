@@ -1,65 +1,55 @@
 package at.ac.fhcampuswien.services;
 
+import at.ac.fhcampuswien.exceptions.DatabaseException;
+import at.ac.fhcampuswien.exceptions.MovieNotFoundException;
 import at.ac.fhcampuswien.models.Movie;
+import at.ac.fhcampuswien.repositories.MovieRepository;
 
 import java.util.List;
 import java.util.Map;
 
 public class MovieService {
-    private final List<Movie> movies;
+    private final MovieRepository movieRepository;
 
-    public MovieService(List<Movie> movies) {
-        this.movies = movies;
+    public MovieService(MovieRepository movieRepository) {
+        this.movieRepository = movieRepository;
     }
 
-    public List<Movie> getAllMovies() {
-        return movies;
+    public List<Movie> getAllMovies() throws DatabaseException {
+        return movieRepository.findAll();
     }
 
-    public boolean addMovie(Movie movie) {
-        if (movie == null || !isValidMovie(movie) || movieExists(movie)) {
+    public boolean addMovie(Movie movie) throws DatabaseException {
+        if (movie == null || !isValidMovie(movie)) {
             return false;
         }
 
-        if (movie.getId() == null) {
-            movie.setId(java.util.UUID.randomUUID());
-        }
-
-        movies.add(movie);
+        movieRepository.add(movie);
         return true;
     }
 
-    public boolean deleteMovie(Movie movieToDelete) {
+    public boolean deleteMovie(Movie movieToDelete) throws DatabaseException, MovieNotFoundException {
         if (movieToDelete == null || !isValidMovie(movieToDelete)) {
             return false;
         }
 
-        return movies.removeIf(movie -> sameMovieData(movie, movieToDelete));
+        return movieRepository.delete(movieToDelete);
     }
 
-    public boolean updateMovie(Movie updatedMovie) {
+    public boolean updateMovie(Movie updatedMovie) throws DatabaseException, MovieNotFoundException {
         if (updatedMovie == null || updatedMovie.getId() == null || !isValidMovie(updatedMovie)) {
             return false;
         }
 
-        return movies.stream()
-                .filter(movie -> movie.getId().equals(updatedMovie.getId()))
-                .findFirst()
-                .map(movie -> {
-                    movie.setTitle(updatedMovie.getTitle());
-                    movie.setGenre(updatedMovie.getGenre());
-                    movie.setReleaseYear(updatedMovie.getReleaseYear());
-                    return true;
-                })
-                .orElse(false);
+        return movieRepository.update(updatedMovie);
     }
 
-    public List<Movie> searchMovies(Map<String, String> queryParams) {
+    public List<Movie> searchMovies(Map<String, String> queryParams) throws DatabaseException {
         String title = queryParams.get("title");
         String genre = queryParams.get("genre");
         String releaseYear = queryParams.get("releaseYear");
 
-        return movies.stream()
+        return movieRepository.findAll().stream()
                 .filter(movie -> title == null || title.isBlank() ||
                         movie.getTitle().toLowerCase().contains(title.toLowerCase()))
                 .filter(movie -> genre == null || genre.isBlank() ||
@@ -73,15 +63,5 @@ public class MovieService {
         return movie.getTitle() != null && !movie.getTitle().trim().isEmpty()
                 && movie.getGenre() != null && !movie.getGenre().trim().isEmpty()
                 && movie.getReleaseYear() > 1800 && movie.getReleaseYear() < 2027;
-    }
-
-    private boolean movieExists(Movie movie) {
-        return movies.stream().anyMatch(existingMovie -> sameMovieData(existingMovie, movie));
-    }
-
-    private boolean sameMovieData(Movie movie1, Movie movie2) {
-        return movie1.getTitle().equalsIgnoreCase(movie2.getTitle())
-                && movie1.getGenre().equalsIgnoreCase(movie2.getGenre())
-                && movie1.getReleaseYear() == movie2.getReleaseYear();
     }
 }

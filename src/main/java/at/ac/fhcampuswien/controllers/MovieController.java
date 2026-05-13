@@ -1,42 +1,60 @@
 package at.ac.fhcampuswien.controllers;
 
 import at.ac.fhcampuswien.ApiUtils;
+import at.ac.fhcampuswien.exceptions.DatabaseException;
+import at.ac.fhcampuswien.exceptions.MovieNotFoundException;
 import at.ac.fhcampuswien.models.Movie;
+import at.ac.fhcampuswien.repositories.MovieRepository;
 import at.ac.fhcampuswien.services.MovieService;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Map;
 
 public class MovieController implements HttpHandler {
     private final String BASE = "/api/movies/";
-    private final List<Movie> movies = Movie.generateDummyMovies();
-    private final MovieService movieService = new MovieService(movies);
+    private final MovieService movieService;
     private final Gson gson = new Gson();
+
+    public MovieController() {
+        MovieRepository movieRepository = new MovieRepository();
+        this.movieService = new MovieService(movieRepository);
+    }
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         String method = exchange.getRequestMethod();
         String path = exchange.getRequestURI().getPath();
 
-        switch (path) {
-            case BASE + "getAll" -> handleGetAllRequest(method, exchange);
-            case BASE + "add" -> handleAddRequest(method, exchange);
-            case BASE + "delete" -> handleDeleteRequest(method, exchange);
-            case BASE + "update" -> handleUpdateRequest(method, exchange);
-            case BASE + "search" -> handleSearchRequest(method, exchange);
-            default -> {
-                String response = "{ \"error\": \"Path not found\" }";
-                ApiUtils.sendResponse(exchange, 404, response);
+        try {
+            switch (path) {
+                case BASE + "getAll" -> handleGetAllRequest(method, exchange);
+                case BASE + "add" -> handleAddRequest(method, exchange);
+                case BASE + "delete" -> handleDeleteRequest(method, exchange);
+                case BASE + "update" -> handleUpdateRequest(method, exchange);
+                case BASE + "search" -> handleSearchRequest(method, exchange);
+                default -> {
+                    String response = "{ \"error\": \"Path not found\" }";
+                    ApiUtils.sendResponse(exchange, 404, response);
+                }
             }
+        } catch (JsonSyntaxException e) {
+            sendError(exchange, 400, "Malformed JSON request");
+        } catch (MovieNotFoundException e) {
+            sendError(exchange, 404, e.getMessage());
+        } catch (DatabaseException e) {
+            sendError(exchange, 500, e.getMessage());
+        } catch (Exception e) {
+            sendError(exchange, 500, "Unexpected server error");
         }
     }
 
-    private void handleGetAllRequest(String method, HttpExchange exchange) throws IOException {
+    private void handleGetAllRequest(String method, HttpExchange exchange)
+            throws IOException, DatabaseException {
         switch (method) {
             case "GET" -> {
                 String response = gson.toJson(movieService.getAllMovies());
@@ -49,7 +67,8 @@ public class MovieController implements HttpHandler {
         }
     }
 
-    private void handleAddRequest(String method, HttpExchange exchange) throws IOException {
+    private void handleAddRequest(String method, HttpExchange exchange)
+            throws IOException, DatabaseException {
         switch (method) {
             case "POST" -> {
                 String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
@@ -58,8 +77,7 @@ public class MovieController implements HttpHandler {
                 boolean added = movieService.addMovie(movie);
 
                 if (!added) {
-                    String response = "{ \"error\": \"Invalid movie data or movie already exists\" }";
-                    ApiUtils.sendResponse(exchange, 400, response);
+                    sendError(exchange, 400, "Invalid movie data");
                     return;
                 }
 
@@ -73,7 +91,8 @@ public class MovieController implements HttpHandler {
         }
     }
 
-    private void handleDeleteRequest(String method, HttpExchange exchange) throws IOException {
+    private void handleDeleteRequest(String method, HttpExchange exchange)
+            throws IOException, DatabaseException, MovieNotFoundException {
         switch (method) {
             case "DELETE" -> {
                 String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
@@ -82,8 +101,7 @@ public class MovieController implements HttpHandler {
                 boolean deleted = movieService.deleteMovie(movieToDelete);
 
                 if (!deleted) {
-                    String response = "{ \"error\": \"Movie not found or invalid movie data\" }";
-                    ApiUtils.sendResponse(exchange, 404, response);
+                    sendError(exchange, 400, "Invalid movie data");
                     return;
                 }
 
@@ -97,7 +115,8 @@ public class MovieController implements HttpHandler {
         }
     }
 
-    private void handleUpdateRequest(String method, HttpExchange exchange) throws IOException {
+    private void handleUpdateRequest(String method, HttpExchange exchange)
+            throws IOException, DatabaseException, MovieNotFoundException {
         switch (method) {
             case "PUT" -> {
                 String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
@@ -106,8 +125,7 @@ public class MovieController implements HttpHandler {
                 boolean updated = movieService.updateMovie(updatedMovie);
 
                 if (!updated) {
-                    String response = "{ \"error\": \"Movie not found or invalid movie data\" }";
-                    ApiUtils.sendResponse(exchange, 400, response);
+                    sendError(exchange, 400, "Invalid movie data");
                     return;
                 }
 
@@ -121,7 +139,8 @@ public class MovieController implements HttpHandler {
         }
     }
 
-    private void handleSearchRequest(String method, HttpExchange exchange) throws IOException {
+    private void handleSearchRequest(String method, HttpExchange exchange)
+            throws IOException, DatabaseException {
         switch (method) {
             case "GET" -> {
                 String query = exchange.getRequestURI().getQuery();
@@ -135,5 +154,10 @@ public class MovieController implements HttpHandler {
                 ApiUtils.sendResponse(exchange, 405, response);
             }
         }
+    }
+
+    private void sendError(HttpExchange exchange, int statusCode, String message) throws IOException {
+        String response = "{ \"error\": \"" + message + "\" }";
+        ApiUtils.sendResponse(exchange, statusCode, response);
     }
 }
