@@ -176,4 +176,135 @@ class MovieServiceTest {
 
         assertThrows(MovieNotFoundException.class, () -> movieService.deleteMovie(movieToDelete));
     }
+
+    @Test
+    void givenMovies_whenGetAllMovies_thenReturnAllMovies() throws DatabaseException {
+        List<Movie> result = movieService.getAllMovies();
+
+        assertEquals(2, result.size());
+        verify(movieRepository).findAll();
+    }
+
+    @Test
+    void givenNullMovie_whenAddMovie_thenReturnFalse() throws DatabaseException {
+        boolean result = movieService.addMovie(null);
+
+        assertFalse(result);
+        verify(movieRepository, never()).add(any(Movie.class));
+    }
+
+    @Test
+    void givenInvalidReleaseYear_whenAddMovie_thenReturnFalse() throws DatabaseException {
+        Movie invalidMovie = new Movie("Old Movie", "Drama", 1700);
+
+        boolean result = movieService.addMovie(invalidMovie);
+
+        assertFalse(result);
+        verify(movieRepository, never()).add(invalidMovie);
+    }
+
+    @Test
+    void givenNullMovie_whenDeleteMovie_thenReturnFalse()
+            throws DatabaseException, MovieNotFoundException {
+        boolean result = movieService.deleteMovie(null);
+
+        assertFalse(result);
+        verify(movieRepository, never()).delete(any(Movie.class));
+    }
+
+    @Test
+    void givenNullMovie_whenUpdateMovie_thenReturnFalse()
+            throws DatabaseException, MovieNotFoundException {
+        boolean result = movieService.updateMovie(null);
+
+        assertFalse(result);
+        verify(movieRepository, never()).update(any(Movie.class));
+    }
+
+    @Test
+    void givenEmptyQueryParams_whenSearchMovies_thenReturnAllMovies() throws DatabaseException {
+        Map<String, String> queryParams = new HashMap<>();
+
+        List<Movie> result = movieService.searchMovies(queryParams);
+
+        assertEquals(2, result.size());
+        verify(movieRepository, atLeastOnce()).findAll();
+    }
+
+
+    @Test
+    void givenBlankTitle_whenAddMovie_thenReturnFalse() throws DatabaseException {
+        Movie invalidMovie = new Movie("   ", "Drama", 2020);
+
+        boolean result = movieService.addMovie(invalidMovie);
+
+        assertFalse(result);
+        verify(movieRepository, never()).add(invalidMovie);
+    }
+
+    @Test
+    void givenNullTitle_whenAddMovie_thenReturnFalse() throws DatabaseException {
+        Movie invalidMovie = new Movie(null, "Drama", 2020);
+
+        boolean result = movieService.addMovie(invalidMovie);
+
+        assertFalse(result);
+        verify(movieRepository, never()).add(invalidMovie);
+    }
+
+    @Test
+    void givenBlankGenre_whenAddMovie_thenReturnFalse() throws DatabaseException {
+        Movie invalidMovie = new Movie("Valid Title", "   ", 2020);
+
+        boolean result = movieService.addMovie(invalidMovie);
+
+        assertFalse(result);
+        verify(movieRepository, never()).add(invalidMovie);
+    }
+
+    @Test
+    void givenNullGenre_whenAddMovie_thenReturnFalse() throws DatabaseException {
+        Movie invalidMovie = new Movie("Valid Title", null, 2020);
+
+        boolean result = movieService.addMovie(invalidMovie);
+
+        assertFalse(result);
+        verify(movieRepository, never()).add(invalidMovie);
+    }
+
+    @Test
+    void givenTooHighReleaseYear_whenAddMovie_thenReturnFalse() throws DatabaseException {
+        Movie invalidMovie = new Movie("Future Movie", "Sci-Fi", 2030);
+
+        boolean result = movieService.addMovie(invalidMovie);
+
+        assertFalse(result);
+        verify(movieRepository, never()).add(invalidMovie);
+    }
+
+    @Test
+    void givenBlankSearchParams_whenSearchMovies_thenReturnAllMovies() throws DatabaseException {
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("title", " ");
+        queryParams.put("genre", " ");
+        queryParams.put("releaseYear", " ");
+
+        List<Movie> result = movieService.searchMovies(queryParams);
+
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void givenNoMatchingSearchParams_whenSearchMovies_thenReturnEmptyList() throws DatabaseException {
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("title", "Avatar");
+        queryParams.put("genre", "Fantasy");
+        queryParams.put("releaseYear", "2009");
+
+        List<Movie> result = movieService.searchMovies(queryParams);
+
+        assertTrue(result.isEmpty());
+    }
+
+
 }
