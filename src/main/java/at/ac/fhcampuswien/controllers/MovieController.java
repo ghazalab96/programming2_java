@@ -115,6 +115,7 @@ public class MovieController implements HttpHandler {
         }
     }
 
+
     private void handleUpdateRequest(String method, HttpExchange exchange)
             throws IOException, DatabaseException, MovieNotFoundException {
         switch (method) {
