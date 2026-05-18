@@ -3,18 +3,27 @@ package at.ac.fhcampuswien.services;
 import at.ac.fhcampuswien.exceptions.DatabaseException;
 import at.ac.fhcampuswien.exceptions.MovieNotFoundException;
 import at.ac.fhcampuswien.models.Movie;
-import at.ac.fhcampuswien.repositories.MovieRepository;
+import at.ac.fhcampuswien.repositories.MovieRepositoryInterface;
+import at.ac.fhcampuswien.strategies.GenreSearchStrategy;
+import at.ac.fhcampuswien.strategies.MovieSearchStrategy;
+import at.ac.fhcampuswien.strategies.ReleaseYearSearchStrategy;
+import at.ac.fhcampuswien.strategies.TitleSearchStrategy;
 
 import java.util.List;
 import java.util.Map;
 
 public class MovieService {
-    private final MovieRepository movieRepository;
+    private final MovieRepositoryInterface movieRepository;
 
-    public MovieService(MovieRepository movieRepository) {
+    private final Map<String, MovieSearchStrategy> searchStrategies = Map.of(
+            "title", new TitleSearchStrategy(),
+            "genre", new GenreSearchStrategy(),
+            "releaseYear", new ReleaseYearSearchStrategy()
+    );
+
+    public MovieService(MovieRepositoryInterface movieRepository) {
         this.movieRepository = movieRepository;
     }
-
     public List<Movie> getAllMovies() throws DatabaseException {
         return movieRepository.findAll();
     }
@@ -45,17 +54,24 @@ public class MovieService {
     }
 
     public List<Movie> searchMovies(Map<String, String> queryParams) throws DatabaseException {
-        String title = queryParams.get("title");
-        String genre = queryParams.get("genre");
-        String releaseYear = queryParams.get("releaseYear");
-
         return movieRepository.findAll().stream()
-                .filter(movie -> title == null || title.isBlank() ||
-                        movie.getTitle().toLowerCase().contains(title.toLowerCase()))
-                .filter(movie -> genre == null || genre.isBlank() ||
-                        movie.getGenre().toLowerCase().contains(genre.toLowerCase()))
-                .filter(movie -> releaseYear == null || releaseYear.isBlank() ||
-                        String.valueOf(movie.getReleaseYear()).contains(releaseYear))
+                .filter(movie -> queryParams.entrySet().stream()
+                        .allMatch(entry -> {
+                            String key = entry.getKey();
+                            String value = entry.getValue();
+
+                            if (value == null || value.isBlank()) {
+                                return true;
+                            }
+
+                            MovieSearchStrategy strategy = searchStrategies.get(key);
+
+                            if (strategy == null) {
+                                return true;
+                            }
+
+                            return strategy.matches(movie, value);
+                        }))
                 .toList();
     }
 

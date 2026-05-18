@@ -4,6 +4,7 @@ import at.ac.fhcampuswien.exceptions.DatabaseException;
 import at.ac.fhcampuswien.exceptions.MovieNotFoundException;
 import at.ac.fhcampuswien.models.Movie;
 import at.ac.fhcampuswien.repositories.MovieRepository;
+import at.ac.fhcampuswien.repositories.MovieRepositoryInterface;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -16,17 +17,18 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+
 class MovieServiceTest {
 
     private MovieService movieService;
-    private MovieRepository movieRepository;
+    private MovieRepositoryInterface movieRepository;
     private List<Movie> movies;
     private Movie inception;
     private Movie titanic;
 
     @BeforeEach
     void setUp() throws DatabaseException {
-        movieRepository = mock(MovieRepository.class);
+        movieRepository = mock(MovieRepositoryInterface.class);
 
         movies = new ArrayList<>();
 
@@ -39,6 +41,28 @@ class MovieServiceTest {
         when(movieRepository.findAll()).thenReturn(movies);
 
         movieService = new MovieService(movieRepository);
+    }
+
+    @Test
+    void shouldThrowDatabaseException_whenDeletingMovieWithDatabaseError()
+            throws DatabaseException, MovieNotFoundException {
+        Movie movieToDelete = new Movie("Inception", "Sci-Fi", 2010);
+
+
+        when(movieRepository.delete(movieToDelete))
+                .thenThrow(new DatabaseException("Database connection error"));
+        assertThrows(DatabaseException.class, () -> movieService.deleteMovie(movieToDelete));
+    }
+
+    @Test
+    void shouldThrowMovieNotFoundException_whenDeletingNonExistingMovie()
+            throws DatabaseException, MovieNotFoundException {
+        Movie movieToDelete = new Movie("Avatar", "Sci-Fi", 2009);
+
+        when(movieRepository.delete(movieToDelete))
+                .thenThrow(new MovieNotFoundException("Movie not found for deletion"));
+
+        assertThrows(MovieNotFoundException.class, () -> movieService.deleteMovie(movieToDelete));
     }
 
     @Test
@@ -153,28 +177,6 @@ class MovieServiceTest {
 
         assertEquals(1, result.size());
         assertEquals("Inception", result.get(0).getTitle());
-    }
-
-    @Test
-    void shouldThrowDatabaseException_whenDeletingMovieWithDatabaseError()
-            throws DatabaseException, MovieNotFoundException {
-        Movie movieToDelete = new Movie("Inception", "Sci-Fi", 2010);
-
-        when(movieRepository.delete(movieToDelete))
-                .thenThrow(new DatabaseException("Database connection error"));
-
-        assertThrows(DatabaseException.class, () -> movieService.deleteMovie(movieToDelete));
-    }
-
-    @Test
-    void shouldThrowMovieNotFoundException_whenDeletingNonExistingMovie()
-            throws DatabaseException, MovieNotFoundException {
-        Movie movieToDelete = new Movie("Avatar", "Sci-Fi", 2009);
-
-        when(movieRepository.delete(movieToDelete))
-                .thenThrow(new MovieNotFoundException("Movie not found for deletion"));
-
-        assertThrows(MovieNotFoundException.class, () -> movieService.deleteMovie(movieToDelete));
     }
 
     @Test

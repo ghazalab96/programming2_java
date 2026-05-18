@@ -3,6 +3,7 @@ package at.ac.fhcampuswien.controllers;
 import at.ac.fhcampuswien.ApiUtils;
 import at.ac.fhcampuswien.exceptions.DatabaseException;
 import at.ac.fhcampuswien.exceptions.MovieNotFoundException;
+import at.ac.fhcampuswien.factories.AppFactory;
 import at.ac.fhcampuswien.models.Movie;
 import at.ac.fhcampuswien.repositories.MovieRepository;
 import at.ac.fhcampuswien.services.MovieService;
@@ -21,8 +22,7 @@ public class MovieController implements HttpHandler {
     private final Gson gson = new Gson();
 
     public MovieController() {
-        MovieRepository movieRepository = new MovieRepository();
-        this.movieService = new MovieService(movieRepository);
+        this.movieService = AppFactory.createMovieService();
     }
 
     @Override

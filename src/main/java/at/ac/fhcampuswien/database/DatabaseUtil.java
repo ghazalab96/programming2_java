@@ -1,5 +1,7 @@
 package at.ac.fhcampuswien.database;
 
+import at.ac.fhcampuswien.exceptions.DatabaseException;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -14,7 +16,7 @@ public class DatabaseUtil {
         return DriverManager.getConnection(JDBC_URL, USER, PASSWORD);
     }
 
-    public static void initializeDatabase() {
+    public static void initializeDatabase()  {
         String createTableSql = """
                 CREATE TABLE IF NOT EXISTS movies (
                     id UUID PRIMARY KEY,
