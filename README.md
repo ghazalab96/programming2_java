@@ -1,5 +1,3 @@
- ````markdown
-
 ## Project Checklist
 
 ### Overall Learning Outcomes
@@ -184,6 +182,7 @@
 - [x] Prepared to discuss possible alternatives and future improvements
 
 
+ ````markdown
 # Movie REST API
 
 A Java-based Movie REST API built step by step as part of the Programming 2 exercises.
